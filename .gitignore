@@ -164,3 +164,6 @@ data/raw_data/
 data/checkpoints/
 data/results/
 
+# Confidential data (tokens, etc)
+src/config.py
+
