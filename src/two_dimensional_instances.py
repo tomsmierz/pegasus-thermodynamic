@@ -22,7 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CWD = os.getcwd()
 
 try:
-    from src.config import TOKEN
+    from src.config import TOKEN, TOKEN2
 except ImportError:
     print(f"To run {__file__}, you must have \"config.py\" file with your dwave's ocean token")
     with open(os.path.join(CWD, "config.py"), "w") as f:
@@ -32,49 +32,49 @@ except ImportError:
 if __name__ == '__main__':
 
     # Setup
-    qpu_sampler = DWaveSampler(solver='Advantage_system4.1', token=TOKEN)
+    qpu_sampler = DWaveSampler(solver='Advantage_system6.3', token=TOKEN2)
 
     # Experiment setup
-    num_samples = 100
+    num_samples = 10
     gibbs_num_steps = 10 ** 4
-    anneal_length = 2000
-    num_reads = 100
+    anneal_length = 800
+    num_reads = 1000
 
     graph = qpu_sampler.to_networkx_graph()
 
-    h_const = {node: 0 for node in graph.nodes}
-    J_const = {edge: -1 for edge in graph.edges}
-    const = Instance(h=h_const, J=J_const, name="constant")
-    with open(os.path.join(ROOT, "data", "p16_4.1_const.pkl"), "wb") as f:
-        pickle.dump(const, f)
-
-    h_uniform = {node: 0 for node in graph.nodes}
-    J_uniform = {edge: rng.uniform(-1, 1) for edge in graph.edges}
-    uniform = Instance(h=h_uniform, J=J_uniform, name="Uniform")
-    with open(os.path.join(ROOT, "data", "p16_4.1_uniform.pkl"), "wb") as f:
-        pickle.dump(uniform, f)
-
-    h_cbfm = {node: rng.choice([-1, 0], p=[0.85, 0.15]) for node in graph.nodes}
-    J_cbfm = {edge: rng.choice([-1, 0, 1], p=[0.1, 0.35, 0.55]) for edge in graph.edges}
-    cbfm = Instance(h=h_cbfm, J=J_cbfm, name="CBFM")
-    with open(os.path.join(ROOT, "data", "p16_4.1_cbfm.pkl"), "wb") as f:
-        pickle.dump(cbfm, f)
-
-    # with open(os.path.join(ROOT, "data", "p16_4.1_const.pkl"), "rb") as f:
-    #     const = pickle.load(f)
+    # h_const = {node: 0 for node in graph.nodes}
+    # J_const = {edge: -1 for edge in graph.edges}
+    # const = Instance(h=h_const, J=J_const, name="constant")
+    # with open(os.path.join(ROOT, "data", "p16_4.1_const.pkl"), "wb") as f:
+    #     pickle.dump(const, f)
     #
-    # with open(os.path.join(ROOT, "data", "p16_4.1_uniform.pkl"), "rb") as f:
-    #     uniform = pickle.load(f)
+    # h_uniform = {node: 0 for node in graph.nodes}
+    # J_uniform = {edge: rng.uniform(-1, 1) for edge in graph.edges}
+    # uniform = Instance(h=h_uniform, J=J_uniform, name="Uniform")
+    # with open(os.path.join(ROOT, "data", "p16_4.1_uniform.pkl"), "wb") as f:
+    #     pickle.dump(uniform, f)
     #
-    # with open(os.path.join(ROOT, "data", "p16_4.1_cbfm.pkl"), "rb") as f:
-    #     cbfm = pickle.load(f)
+    # h_cbfm = {node: rng.choice([-1, 0], p=[0.85, 0.15]) for node in graph.nodes}
+    # J_cbfm = {edge: rng.choice([-1, 0, 1], p=[0.1, 0.35, 0.55]) for edge in graph.edges}
+    # cbfm = Instance(h=h_cbfm, J=J_cbfm, name="CBFM")
+    # with open(os.path.join(ROOT, "data", "p16_4.1_cbfm.pkl"), "wb") as f:
+    #     pickle.dump(cbfm, f)
+
+    with open(os.path.join(ROOT, "data", "p16_4.1_const.pkl"), "rb") as f:
+        const = pickle.load(f)
+
+    with open(os.path.join(ROOT, "data", "p16_4.1_uniform.pkl"), "rb") as f:
+        uniform = pickle.load(f)
+
+    with open(os.path.join(ROOT, "data", "p16_4.1_cbfm.pkl"), "rb") as f:
+        cbfm = pickle.load(f)
 
     for inst in [const, uniform, cbfm]:
         h = inst.h
         J = inst.J
         name = inst.name
-        for pause_duration in [0, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 1500, 1900, 1990, 1998]:
-            for anneal_param in np.linspace(0.2, 0.4, num=11):
+        for pause_duration in [0, 20, 40, 60, 80, 100, 200, 400, 600, 700, 790, 798]:
+            for anneal_param in np.linspace(0.2, 0.4, num=21):
 
                 raw_data = pd.DataFrame(columns=["sample", "energy", "num_occurrences", "init_state"])
                 for i in tqdm(range(num_samples),
