@@ -1,4 +1,5 @@
 import numpy as np
+from dimod import BinaryQuadraticModel
 from collections import OrderedDict
 
 rng = np.random.default_rng()
@@ -21,23 +22,32 @@ def pseudo_likelihood(beta_eff, samples):
 
 
 def gibbs_sampling_ising(h: dict, J: dict, beta: float, num_steps: int):
-    h = OrderedDict(sorted(h.items()))
-    J = OrderedDict(sorted(J.items()))
+    # h = OrderedDict(sorted(h.items()))
+    # J = OrderedDict(sorted(J.items()))
     s = OrderedDict({i: rng.choice([-1, 1]) for i in h.keys()})
-    h_vect, J_vect = vectorize(h, J)
-    nodes = list(h.keys())
+    # h_vect, J_vect = vectorize(h, J)
+    # nodes = list(h.keys())
+    bqm = BinaryQuadraticModel("SPIN")
+    bqm = bqm.from_ising(h, J)
+    nodes = list(bqm.variables)
 
     for _ in range(num_steps):
         pos = rng.choice(nodes)  # we chose an index
+        #
+        # s_plus = np.array(list(s.values()))
+        # s_plus[pos] = 1
+        # s_minus = np.array(list(s.values()))
+        # s_minus[pos] = -1
 
-        s_plus = np.array(list(s.values()))
+        s_plus = {k: v for k, v in s.items()}
         s_plus[pos] = 1
-        s_minus = np.array(list(s.values()))
+        s_minus = {k: v for k, v in s.items()}
         s_minus[pos] = -1
-
-        deltaE = energy(s_plus, h_vect, J_vect) - energy(s_minus, h_vect, J_vect)
+        # deltaE = energy(s_plus, h_vect, J_vect) - energy(s_minus, h_vect, J_vect)
+        deltaE = bqm.energy(s_plus) - bqm.energy(s_minus)
         prob = 1/(1+np.exp(beta*deltaE))  # P(s_i = 1| s_-i)
         s[pos] = rng.choice([-1, 1], p=[1-prob, prob])
+
     return s
 
 
