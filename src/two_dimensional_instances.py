@@ -37,7 +37,7 @@ if __name__ == '__main__':
     # Experiment setup
     num_samples = 10
     gibbs_num_steps = 10 ** 4
-    anneal_length = 800
+    anneal_length = 700
     num_reads = 1000
 
     graph = qpu_sampler.to_networkx_graph()
@@ -73,7 +73,7 @@ if __name__ == '__main__':
         h = inst.h
         J = inst.J
         name = inst.name
-        for pause_duration in [0, 20, 40, 60, 80, 100, 200, 400, 600, 700, 790, 798]:
+        for pause_duration in [0, 20, 40, 60, 80, 100, 200, 400, 600, 690, 698]:
             for anneal_param in np.linspace(0.2, 0.4, num=21):
 
                 raw_data = pd.DataFrame(columns=["sample", "energy", "num_occurrences", "init_state"])
