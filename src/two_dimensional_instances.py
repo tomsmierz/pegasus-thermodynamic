@@ -73,8 +73,8 @@ if __name__ == '__main__':
         h = inst.h
         J = inst.J
         name = inst.name
-        for pause_duration in [0, 20, 40, 60, 80, 100, 200, 400, 600, 690, 698]:
-            for anneal_param in np.linspace(0.2, 0.4, num=21):
+        for pause_duration in [0, 40, 80, 200]: #[0, 20, 40, 60, 80, 100, 200, 400, 600, 690, 698]:
+            for anneal_param in np.linspace(0.2, 0.4, num=10):
 
                 raw_data = pd.DataFrame(columns=["sample", "energy", "num_occurrences", "init_state"])
                 for i in tqdm(range(num_samples),

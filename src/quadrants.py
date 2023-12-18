@@ -34,6 +34,7 @@ def test_embedding(chain: nx.Graph, target: nx.Graph):
     sampleset = sampler.sample_ising(h, J, num_reads=1000, annealing_time=200)
     dwave.inspector.show(sampleset)
 
+
 if __name__ == '__main__':
 
     # Setup
@@ -93,8 +94,18 @@ if __name__ == '__main__':
 
     for quadrant in [Q1, Q2, Q3, Q4]:
         name = quadrant.graph["name"]
-        for pause_duration in [100]:# [0, 20, 40, 60, 80, 100]:
+        for pause_duration in [0, 20, 40, 60, 80]:
             for anneal_param in np.linspace(0, 1, num=25):
+
+                if quadrant == Q1:
+                    continue
+                if quadrant == Q2:
+                    continue
+                if quadrant == Q3 and pause_duration != 80:
+                    continue
+                if quadrant == Q3 and pause_duration == 80 and anneal_param <0.92:
+                    continue
+
 
                 E_fin = []
                 configurations = []
