@@ -1,24 +1,52 @@
 import numpy as np
+import pandas as pd
 from dimod import BinaryQuadraticModel
 from collections import OrderedDict
 
 rng = np.random.default_rng()
 
 
-def pseudo_likelihood(beta_eff, samples):
-    J = - 1.0
-    L = 0.0
+# def pseudo_likelihood(beta_eff, samples):
+#     J = - 1.0
+#     L = 0.0
+#     N = samples.shape[1]
+#     D = samples.shape[0]
+#     for i in range(D-1):
+#         for j in range(N-1):
+#             if j == 0:
+#                 L += -np.log(1+np.exp(-2*(J*samples[i,j]*samples[i,j+1])*beta_eff))
+#             elif j == N-1:
+#                 L += -np.log(1+np.exp(-2*(J*samples[i,j]*samples[i,j-1])*beta_eff))
+#             else:
+#                 L += -np.log(1+np.exp(-2*(J*samples[i,j]*samples[i,j+1]+J*samples[i,j]*samples[i,j-1])*beta_eff))
+#     return -L/(N*D)
+
+def neighbour(i: int, N: int) -> list:
+    if i == 0:
+        return [1]
+    elif i == N - 1:
+        return [N - 2]
+    else:
+        return [i-1, i+1]
+
+def extend(J: dict) -> dict:
+    J_new = {}
+    for a,b in J.keys():
+        J_new[(a, b)] = J[(a, b)]
+        J_new[(b, a)] = J[(a, b)]
+    return J_new
+
+
+def pseudo_likelihood(beta_eff: float, h: dict, J: dict, samples: np.ndarray):
     N = samples.shape[1]
     D = samples.shape[0]
-    for i in range(D-1):
-        for j in range(N-1):
-            if j == 0:
-                L += -np.log(1+np.exp(-2*(J*samples[i,j]*samples[i,j+1])*beta_eff))
-            elif j == N-1:
-                L += -np.log(1+np.exp(-2*(J*samples[i,j]*samples[i,j-1])*beta_eff))
-            else:
-                L += -np.log(1+np.exp(-2*(J*samples[i,j]*samples[i,j+1]+J*samples[i,j]*samples[i,j-1])*beta_eff))
-    return -L/(N*D)
+    L = 0.0
+
+    for d in range(D):
+        for i in range(N):
+            L += np.log(1 + np.exp(-2 * beta_eff * samples[d, i] *
+                                   (h[i] + sum([J[(i, j)] * samples[d, j] for j in neighbour(i, N)]))))
+    return L/(N * D)
 
 
 def gibbs_sampling_ising(h: dict, J: dict, beta: float, num_steps: int):
