@@ -1,0 +1,5 @@
+Files here are a dictionaries with entries of the form (chain_length, pause time)
+betas2 have values of parameter beta_2
+energies have values of (mean, var), where energy is taken per-spin
+Q is diference between final energy and initial energy. Th evalues are also (mean, var)
+and per-spin
