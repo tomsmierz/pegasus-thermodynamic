@@ -19,6 +19,10 @@ rng = np.random.default_rng()
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CWD = os.getcwd()
+output_path = os.path.join(ROOT, "data", "raw_data", "scalability2")
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
+
 
 try:
     from src.config import TOKEN
@@ -87,5 +91,5 @@ if __name__ == '__main__':
                 df = sampleset.to_pandas_dataframe(sample_column=True)
                 df["init_state"] = [initial_state for _ in range(len(df))]
                 raw_data = pd.concat([raw_data, df], ignore_index=True)
-                raw_data.to_csv(os.path.join(ROOT, "data", "raw_data", "scalability",
-                                             f"raw_data_pegasus_{chain_length}_{pause_duration}.csv"))
+
+                raw_data.to_csv(os.path.join(output_path, f"raw_data_pegasus_{chain_length}_{pause_duration}.csv"))

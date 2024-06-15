@@ -9,7 +9,7 @@ from math import exp
 rng = np.random.default_rng()
 
 
-class EnergyEquivalence(unittest.TestCase):
+class GibbsSampling(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         spins = 5

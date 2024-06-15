@@ -19,6 +19,9 @@ rng = np.random.default_rng()
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CWD = os.getcwd()
+output_path = os.path.join(ROOT, "data", "raw_data", "quadrants2")
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
 
 try:
     from src.config import TOKEN
@@ -31,7 +34,7 @@ except ImportError:
 def test_embedding(chain: nx.Graph, target: nx.Graph):
     embedding = find_embedding(chain, target)
     sampler = FixedEmbeddingComposite(qpu_sampler, embedding)
-    sampleset = sampler.sample_ising(h, J, num_reads=1000, annealing_time=200)
+    sampleset = sampler.sample_ising(h, J, num_reads=100, annealing_time=10)
     dwave.inspector.show(sampleset)
 
 if __name__ == '__main__':
@@ -40,6 +43,32 @@ if __name__ == '__main__':
     qpu_sampler = DWaveSampler(solver='Advantage_system6.3', token=TOKEN)
     target = qpu_sampler.to_networkx_graph()
     pegasus_nice_numbering = {node: dnx.pegasus_coordinates(16).linear_to_nice(node) for node in target.nodes}
+
+    # Experiment setup
+    CHAIN_LENGTH = 300
+    NUM_SAMPLES = 100
+    GIBBS_NUM_STEPS = 10 ** 4
+    ANNEAL_LENGTH = 200
+    NUM_READS = 100
+    PAUSES = [0, 20, 60, 100]
+
+
+    # Right now generates random instances.
+    instance_path = os.path.join(ROOT, "data", "instance.pkl")
+    if os.path.exists(instance_path):
+        with open(instance_path, "rb") as f:
+            print(f"loading existing instance")
+            h, J = pickle.load(f)
+    else:
+        print(f"generating new instance")
+        h = {node: 0 for node in range(CHAIN_LENGTH)}
+        J = {(node, node + 1): rng.uniform(-1, 1) for node in range(CHAIN_LENGTH - 1)}
+        with open(instance_path, "wb") as f:
+            l = [h, J]
+            pickle.dump(l, f)
+
+    h_vect, J_vect = vectorize(h, J)
+    chain = nx.Graph(J.keys())
 
     # First Quadrant
     Q1 = deepcopy(target)
@@ -73,44 +102,26 @@ if __name__ == '__main__':
         if y < 8 or x < 8:
             Q4.remove_node(node)
 
-    # Experiment setup
-    chain_length = 300
-    num_samples = 100
-    gibbs_num_steps = 10 ** 4
-    anneal_length = 200
-    num_reads = 100
-
-    with open(os.path.join(ROOT, "data", "instance.pkl"), "rb") as f:
-        h, J = pickle.load(f)
-    h_vect, J_vect = vectorize(h, J)
-    chain = nx.Graph(J.keys())
-
-    mean_E = {}
-    var_E = {}
-    mean_Q = {}
-    var_Q = {}
-    beta_eff = {}
-
     for quadrant in [Q1, Q2, Q3, Q4]:
         name = quadrant.graph["name"]
-        for pause_duration in [100]:# [0, 20, 40, 60, 80, 100]:
+        for pause_duration in PAUSES:
             for anneal_param in np.linspace(0, 1, num=25):
 
                 E_fin = []
                 configurations = []
                 Q = []
                 raw_data = pd.DataFrame(columns=["sample", "energy", "num_occurrences", "init_state"])
-                for i in tqdm(range(num_samples),
+                for i in tqdm(range(NUM_SAMPLES),
                               desc=f"samples for {name} pause duration {pause_duration:.2f} s {anneal_param:.2f}"):
-                    initial_state = dict(gibbs_sampling_ising(h, J, 1, gibbs_num_steps))
+                    initial_state = dict(gibbs_sampling_ising(h, J, 1, GIBBS_NUM_STEPS))
                     init_state = np.array(list(initial_state.values()))
 
-                    E_init = energy(init_state, h_vect, J_vect) / chain_length  # per spin
+                    E_init = energy(init_state, h_vect, J_vect) / CHAIN_LENGTH  # per spin
 
-                    anneal_schedule = [[0, 1], [anneal_length * 1 / 2 - pause_duration / 2, anneal_param],
-                                       [anneal_length * 1 / 2 + pause_duration / 2, anneal_param],
-                                       [anneal_length, 1]] if pause_duration != 0 else \
-                                       [[0, 1], [anneal_length / 2, anneal_param], [anneal_length, 1]]
+                    anneal_schedule = [[0, 1], [ANNEAL_LENGTH * 1 / 2 - pause_duration / 2, anneal_param],
+                                       [ANNEAL_LENGTH * 1 / 2 + pause_duration / 2, anneal_param],
+                                       [ANNEAL_LENGTH, 1]] if pause_duration != 0 else \
+                                       [[0, 1], [ANNEAL_LENGTH / 2, anneal_param], [ANNEAL_LENGTH, 1]]
                     try:
                         embedding = find_embedding(chain, quadrant, tries=1000)
                     except ValueError:
@@ -119,24 +130,13 @@ if __name__ == '__main__':
 
                     sampleset = sampler.sample_ising(h=h, J=J, initial_state=initial_state,
                                                      anneal_schedule=anneal_schedule,
-                                                     num_reads=num_reads, auto_scale=False, reinitialize_state=True)
-
-                    # for s in sampleset.samples():
-                    #     final_state = np.array(list(s.values()))
-                    #     E_fin.append(energy(final_state, h_vect, J_vect) / chain_length)
-                    #     configurations.append(final_state)
-                    #     Q.append(energy(final_state, h_vect, J_vect) / chain_length - E_init)
+                                                     num_reads=NUM_READS, auto_scale=False, reinitialize_state=True)
 
                     df = sampleset.to_pandas_dataframe(sample_column=True)
                     df["init_state"] = [initial_state for _ in range(len(df))]
                     raw_data = pd.concat([raw_data, df], ignore_index=True)
-                    raw_data.to_csv(os.path.join(ROOT, "data", "raw_data", "quadrants",
+
+                    raw_data.to_csv(os.path.join(output_path,
                                                  f"raw_data_pegasus_{name}_{pause_duration}_{anneal_param:.2f}.csv"))
 
-                # optim = optimize.minimize(pseudo_likelihood, 1.0, args=(np.array(configurations),))
-                # beta_eff[(pause_duration, anneal_param)] = optim.x
-                # mean_E[(pause_duration, anneal_param)] = np.mean(np.array(E_fin))
-                # var_E[(pause_duration, anneal_param)] = np.var(np.array(E_fin))
-                # mean_Q[(pause_duration, anneal_param)] = np.mean(np.array(Q))
-                # var_Q[(pause_duration, anneal_param)] = np.var(np.array(Q))
 
