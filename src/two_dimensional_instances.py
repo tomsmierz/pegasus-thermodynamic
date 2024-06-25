@@ -29,6 +29,11 @@ except ImportError:
         f.write("TOKEN = \"your_ocean_token\"")
 
 
+def create_planted_solution_instance(size, num_loops, instance_graph):
+    solution = {node: rng.choice([]) for node in instance_graph.nodes}
+
+
+
 if __name__ == '__main__':
 
     # Setup

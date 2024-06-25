@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import networkx as nx
 from dimod import BinaryQuadraticModel
 from collections import OrderedDict
 
@@ -83,4 +84,34 @@ def vectorize(h: dict, J: dict):
 
 def energy(s: np.ndarray, h: np.ndarray, J: np.ndarray):
     return np.dot(np.dot(s, J), s) + np.dot(s, h)
+
+
+def random_walk(G: nx.Graph, participating_nodes: list):
+
+    start_node = rng.choice(participating_nodes)
+    visited_nodes = set()
+    current_node = start_node
+
+    walk_path = [current_node]
+    visited_nodes.add(current_node)
+
+    while True:
+        neighbors = list(G.neighbors(current_node))
+        if not neighbors:
+            break
+
+        next_node = rng.choice(neighbors)
+        if next_node in visited_nodes:
+            walk_path.append(next_node)
+            if next_node != start_node:
+                index = walk_path.index(next_node)
+                walk_path = walk_path[index:]
+            break
+        else:
+            walk_path.append(next_node)
+            visited_nodes.add(next_node)
+            current_node = next_node
+
+    return walk_path
+
 
