@@ -15,6 +15,7 @@ RESULTS = os.path.join(ROOT, "data", "results", "scalability")
 SCALING = [100, 500, 1000, 2000]
 PAUSES = [0, 20, 60, 100]
 CALCULATE_GROUND_STATES = False
+CALCULATE_EFFICIENCY = False
 
 
 solver = PlanarGraphSolver()  # exact solver, so it always reaches ground state
@@ -64,27 +65,28 @@ if __name__ == '__main__':
         energies_df = pd.DataFrame(data=energies_data)
         energies_df.to_csv(os.path.join(ROOT, "data", "ground_state_energies.csv"))
 
-    ground_states = pd.read_csv(os.path.join(ROOT, "data", "ground_state_energies.csv"), index_col=0)
-    probabilities = {}
-    for filename in os.listdir(DATA):
-        file_path = os.path.join(DATA, filename)
-        if os.path.isfile(file_path):
-            name = filename[0:-4]
-            parameters = name.split("_")
-            chain_length = parameters[3]
-            pause_time = parameters[4]
+    if CALCULATE_EFFICIENCY:
+        ground_states = pd.read_csv(os.path.join(ROOT, "data", "ground_state_energies.csv"), index_col=0)
+        probabilities = {}
+        for filename in os.listdir(DATA):
+            file_path = os.path.join(DATA, filename)
+            if os.path.isfile(file_path):
+                name = filename[0:-4]
+                parameters = name.split("_")
+                chain_length = parameters[3]
+                pause_time = parameters[4]
 
-            df = pd.read_csv(file_path, index_col=0)
+                df = pd.read_csv(file_path, index_col=0)
 
-            p = 0
-            c = 0
-            ground_state_energy = ground_states.loc[ground_states["size"] == chain_length, "energy"].values[0]
-            for init_state in tqdm(df.init_state.unique().tolist(), desc=f"calculate probability for {filename}"):
-                temp_df = df[df["init_state"] == init_state]
-                c += 1
-                if ground_state_energy in temp_df["energy"].values:
-                    p += 1
-            prob = p/c
-            probabilities[pause_time] = prob
-            with open(os.path.join(RESULTS, f"comp_eff_{chain_length}.pkl"), "wb") as f:
-                pickle.dump(probabilities, f)
+                p = 0
+                c = 0
+                ground_state_energy = ground_states.loc[ground_states["size"] == chain_length, "energy"].values[0]
+                for init_state in tqdm(df.init_state.unique().tolist(), desc=f"calculate probability for {filename}"):
+                    temp_df = df[df["init_state"] == init_state]
+                    c += 1
+                    if ground_state_energy in temp_df["energy"].values:
+                        p += 1
+                prob = p/c
+                probabilities[pause_time] = prob
+                with open(os.path.join(RESULTS, f"comp_eff_{chain_length}.pkl"), "wb") as f:
+                    pickle.dump(probabilities, f)
