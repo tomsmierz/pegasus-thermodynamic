@@ -86,9 +86,9 @@ def energy(s: np.ndarray, h: np.ndarray, J: np.ndarray):
     return np.dot(np.dot(s, J), s) + np.dot(s, h)
 
 
-def random_walk(G: nx.Graph, participating_nodes: list):
+def random_walk(G: nx.Graph):
 
-    start_node = rng.choice(participating_nodes)
+    start_node = rng.choice(list(G.nodes))
     visited_nodes = set()
     current_node = start_node
 
@@ -115,3 +115,30 @@ def random_walk(G: nx.Graph, participating_nodes: list):
     return walk_path
 
 
+def create_planted_solution_instance(min_loop_size, num_loops, instance_graph):
+    """
+    right now, the ground states it produces are without frustrations, so there is Z2 symetry in the
+    low energy spectrum. In general, the ground states produced by this method are not unique.
+    """
+    loops = []
+    print("generating random walks")
+    while len(loops) < num_loops:
+        loop = random_walk(instance_graph)
+        if len(loop) >= min_loop_size+1:
+            loops.append(loop)
+    unique_nodes = set(sum(loops, []))
+    assert len(unique_nodes) <= len(list(instance_graph.nodes))
+    planted_solution = {node: rng.choice([-1, 1]) for node in unique_nodes}
+    J = {}
+    for loop in loops:
+        J_loop = {}
+        for i in range(len(loop) - 1):
+            J_loop[(loop[i], loop[i+1])] = -1 * planted_solution[loop[i]] * planted_solution[loop[i+1]]
+        # chosen_edge = tuple(rng.choice(list(J_loop.keys())))
+        # J_loop[chosen_edge] *= -1
+        for key, value in J_loop.items():
+            if key not in J.keys():
+                J[key] = value
+    energy = sum([value * planted_solution[n1] * planted_solution[n2] for (n1, n2), value in J.items()])
+    h = {node: 0 for node in unique_nodes}
+    return h, J, energy, planted_solution
