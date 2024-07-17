@@ -1,11 +1,15 @@
+import os
+import pickle
+
 import numpy as np
 import pandas as pd
 import networkx as nx
 from dimod import BinaryQuadraticModel
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
+
 
 rng = np.random.default_rng()
-
+Instance = namedtuple("Instance", ["h", "J", "name"])
 
 # def pseudo_likelihood(beta_eff, samples):
 #     J = - 1.0
@@ -142,3 +146,24 @@ def create_planted_solution_instance(min_loop_size, num_loops, instance_graph):
     energy = sum([value * planted_solution[n1] * planted_solution[n2] for (n1, n2), value in J.items()])
     h = {node: 0 for node in unique_nodes}
     return h, J, energy, planted_solution
+
+
+def create_and_save_instance(graph: nx.Graph, instance_type: str, name: str, save_path=os.path.join(ROOT, "data")):
+    if instance_type not in ["uniform", "constant", "CBFM"]:
+        raise ValueError("instance_type shoud be \"uniform\", \"constant\" or \"CBFM\"")
+
+    if instance_type == "constant":
+        h = {node: 0 for node in graph.nodes}
+        J = {edge: -1 for edge in graph.edges}
+    elif instance_type == "uniform":
+        h = {node: 0 for node in graph.nodes}
+        J = {edge: rng.uniform(-1, 1) for edge in graph.edges}
+    elif instance_type == "CBFM":
+        h = {node: rng.choice([-1, 0], p=[0.85, 0.15]) for node in graph.nodes}
+        J = {edge: rng.choice([-1, 0, 1], p=[0.1, 0.35, 0.55]) for edge in graph.edges}
+    else:
+        raise ValueError("Something is really wrong")
+
+    inst = Instance(h=h, J=J, name=instance_type)
+    with open(os.path.join(save_path, name), "rb") as f:
+        pickle.dump(inst, f)

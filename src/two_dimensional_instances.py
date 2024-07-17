@@ -29,9 +29,6 @@ except ImportError:
         f.write("TOKEN = \"your_ocean_token\"")
 
 
-def create_planted_solution_instance(size, num_loops, instance_graph):
-    solution = {node: rng.choice([]) for node in instance_graph.nodes}
-
 
 
 if __name__ == '__main__':
@@ -46,6 +43,9 @@ if __name__ == '__main__':
     num_reads = 1000
 
     graph = qpu_sampler.to_networkx_graph()
+
+
+
 
     # h_const = {node: 0 for node in graph.nodes}
     # J_const = {edge: -1 for edge in graph.edges}

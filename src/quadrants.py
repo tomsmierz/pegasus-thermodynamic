@@ -37,6 +37,7 @@ def test_embedding(chain: nx.Graph, target: nx.Graph):
     sampleset = sampler.sample_ising(h, J, num_reads=100, annealing_time=10)
     dwave.inspector.show(sampleset)
 
+
 if __name__ == '__main__':
 
     # Setup
@@ -54,21 +55,21 @@ if __name__ == '__main__':
 
 
     # Right now generates random instances.
-    instance_path = os.path.join(ROOT, "data", "instance.pkl")
-    if os.path.exists(instance_path):
-        with open(instance_path, "rb") as f:
-            print(f"loading existing instance")
-            h, J = pickle.load(f)
-    else:
-        print(f"generating new instance")
-        h = {node: 0 for node in range(CHAIN_LENGTH)}
-        J = {(node, node + 1): rng.uniform(-1, 1) for node in range(CHAIN_LENGTH - 1)}
-        with open(instance_path, "wb") as f:
-            l = [h, J]
-            pickle.dump(l, f)
-
-    h_vect, J_vect = vectorize(h, J)
-    chain = nx.Graph(J.keys())
+    # instance_path = os.path.join(ROOT, "data", "instance.pkl")
+    # if os.path.exists(instance_path):
+    #     with open(instance_path, "rb") as f:
+    #         print(f"loading existing instance")
+    #         h, J = pickle.load(f)
+    # else:
+    #     print(f"generating new instance")
+    #     h = {node: 0 for node in range(CHAIN_LENGTH)}
+    #     J = {(node, node + 1): rng.uniform(-1, 1) for node in range(CHAIN_LENGTH - 1)}
+    #     with open(instance_path, "wb") as f:
+    #         l = [h, J]
+    #         pickle.dump(l, f)
+    #
+    # h_vect, J_vect = vectorize(h, J)
+    # chain = nx.Graph(J.keys())
 
     # First Quadrant
     Q1 = deepcopy(target)
