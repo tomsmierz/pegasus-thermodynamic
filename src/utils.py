@@ -10,6 +10,7 @@ from collections import OrderedDict, namedtuple
 
 rng = np.random.default_rng()
 Instance = namedtuple("Instance", ["h", "J", "name"])
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # def pseudo_likelihood(beta_eff, samples):
 #     J = - 1.0
