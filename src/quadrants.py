@@ -8,7 +8,8 @@ import numpy as np
 import networkx as nx
 import pandas as pd
 
-from src.utils import pseudo_likelihood, gibbs_sampling_ising, energy, vectorize
+from src.utils import (pseudo_likelihood, gibbs_sampling_ising, energy, vectorize, create_and_save_instance,
+                       create_planted_solution_instance, Instance)
 from dwave.system.samplers import DWaveSampler
 from dwave.system.composites import FixedEmbeddingComposite
 from minorminer import find_embedding
@@ -103,6 +104,25 @@ if __name__ == '__main__':
         if y < 8 or x < 8:
             Q4.remove_node(node)
 
+
+    # what instance do you wand
+    # h, J = create_planted_solution_instance()
+    # save_path = ""
+    # with open(save_path, "wb") as f:
+    #   inst = Instance(h=h, J=J, name="planted"solution)
+    #   pickle.dump(inst, f)
+    #
+    instance_name = ""
+    create_and_save_instance(Q1, "constant", instance_name)
+
+    with open(os.path.join(ROOT, "data", instance_name), "rb") as f:
+        inst = pickle.load(f)
+
+    h = inst.h
+    J = inst.J
+
+    h_vect, J_vect = vectorize(h, J)
+
     for quadrant in [Q1, Q2, Q3, Q4]:
         name = quadrant.graph["name"]
         for pause_duration in PAUSES:
@@ -123,13 +143,13 @@ if __name__ == '__main__':
                                        [ANNEAL_LENGTH * 1 / 2 + pause_duration / 2, anneal_param],
                                        [ANNEAL_LENGTH, 1]] if pause_duration != 0 else \
                                        [[0, 1], [ANNEAL_LENGTH / 2, anneal_param], [ANNEAL_LENGTH, 1]]
-                    try:
-                        embedding = find_embedding(chain, quadrant, tries=1000)
-                    except ValueError:
-                        embedding = find_embedding(chain, quadrant, tries=100000)
-                    sampler = FixedEmbeddingComposite(qpu_sampler, embedding)
+                    # try:
+                    #     embedding = find_embedding(chain, quadrant, tries=1000)
+                    # except ValueError:
+                    #     embedding = find_embedding(chain, quadrant, tries=100000)
+                    # sampler = FixedEmbeddingComposite(qpu_sampler, embedding)
 
-                    sampleset = sampler.sample_ising(h=h, J=J, initial_state=initial_state,
+                    sampleset = qpu_sampler.sample_ising(h=h, J=J, initial_state=initial_state,
                                                      anneal_schedule=anneal_schedule,
                                                      num_reads=NUM_READS, auto_scale=False, reinitialize_state=True)
 
