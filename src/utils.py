@@ -92,7 +92,12 @@ def vectorize(h: dict, J: dict):
 
 
 def energy(s: np.ndarray, h: np.ndarray, J: np.ndarray):
-    return np.dot(np.dot(s, J), s) + np.dot(s, h)
+    if len(s) != len(h):
+        s2 = [s[i] if h[i] != 0 else 0 for i in range(len(h))]
+        s2 = np.array(s2)
+        return np.dot(np.dot(s2, J), s2) + np.dot(s2, h)
+    else:
+        return np.dot(np.dot(s, J), s) + np.dot(s, h)
 
 
 def random_walk(G: nx.Graph):
