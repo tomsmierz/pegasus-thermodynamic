@@ -79,7 +79,11 @@ def gibbs_sampling_ising(h: dict, J: dict, beta: float, num_steps: int):
 
 def vectorize(h: dict, J: dict):
     # We assume that h an J are sorted
-    h_vect = np.array(list(h.values()))
+    h = dict(sorted(h.items()))
+    J = dict(sorted(J.items()))
+    n = max(list(h.keys()))
+    h_list = [h[i] if i in h.keys() else 0 for i in range(n+1)]
+    h_vect = np.array(h_list)
     n = len(h_vect)
     J_vect = np.zeros((n, n))
     for key, value in J.items():
