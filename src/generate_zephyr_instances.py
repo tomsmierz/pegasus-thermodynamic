@@ -250,8 +250,7 @@ def generate_zephyr_instances(
         if size > 12:
             raise AssertionError("Maximum size for working device is 12")
 
-        sampler = DWaveSampler(solver=device,
-        token = "julr-bf16fdadab879dbeb1960fe55070031134855957")
+        sampler = DWaveSampler(solver=device, token=os.environ["DWAVE_API_TOKEN"])
 
         if not all_mappings:
             mapping, perfect_mapping, missing_nodes, missing_edges = find_map(
@@ -276,11 +275,11 @@ def generate_zephyr_instances(
                         graph.remove_edge(reversed_edge[0], reversed_edge[1])
         else:
             perfect_mappings, imperfect_mappings = find_all_mappings(source, sampler)
-            imperfect_mappings = [mapping for mapping in imperfect_mappings if mapping[1] <= 35]
+            imperfect_mappings = [mapping for mapping in imperfect_mappings if mapping[1] <= 30]
             print(f"Found {len(perfect_mappings)} perfect mappings")
             if not perfect_mappings:
                 # raise ValueError(f"No perfect mapping found. Found {len(imperfect_mappings)} imperfect mappings")
-                Warning(f"No perfect mapping found. Found {len(imperfect_mappings)} imperfect mappings")
+                print(f"No perfect mapping found. Found {len(imperfect_mappings)} imperfect mappings")
                 mapping_all = imperfect_mappings[rng.integers(0, len(imperfect_mappings))]
                 mapping = mapping_all[0]
                 print(f"Using imperfect mapping with {mapping_all[1]} missing nodes and "
@@ -329,7 +328,7 @@ def generate_zephyr_instances(
 
     for i in tqdm(
         range(number),
-        desc=f"generating pegasus instances size = {size}, category={category}: ",
+        desc=f"generating zephyr instances size = {size}, category={category}: ",
     ):
         if category == "AC3":
             bias = {node: rng.uniform(-1 / 9, 1 / 9) for node in graph.nodes()}
@@ -339,7 +338,7 @@ def generate_zephyr_instances(
                 else rng.uniform(-1, 1)
                 for edge in graph.edges()
             }
-        elif category == "CBFM-P":
+        elif category in {"CBFM", "CBFM-P"}:
             bias = {node: rng.choice([-1, 0], p=[0.85, 0.15]) for node in graph.nodes()}
             couplings = {
                 edge: rng.choice([-1, 0, 1], p=[0.1, 0.35, 0.55])
@@ -359,7 +358,8 @@ def generate_zephyr_instances(
                 f'Category {category} is not a valid choice. It should be "RAU", "RCO", "CON", "AC3" or "CBFM-P"'
             )
 
-        name = f"{name}{i + 1}" if username else f"{i + 1}"
+        file_category = "CBFM" if category == "CBFM-P" else category
+        instance_name = f"{name}{i + 1}" if username else f"Z{size}_{file_category}_{i + 1}"
         for output_type in output_types:
             if output_type == "DWave":
                 if device is not None:
@@ -372,13 +372,13 @@ def generate_zephyr_instances(
                 else:
                     data = [bias, couplings]
 
-                output_name = f"{name}_dv.pkl"
+                output_name = f"{instance_name}.pkl"
                 with open(os.path.join(output_path, output_name), "wb") as f:
                     pickle.dump(data, f)
                 
                 # Validate instance on QPU if requested and device is available
                 if validate_on_qpu and device is not None:
-                    print(f"Validating instance {name} on QPU {device}...")
+                    print(f"Validating instance {instance_name} on QPU {device}...")
                     # Use the properly mapped bias/couplings for device validation
                     validation_bias = bias_dv if device is not None else bias
                     validation_couplings = couplings_dv if device is not None else couplings
@@ -390,7 +390,7 @@ def generate_zephyr_instances(
                     )
                     
                     # Save validation results alongside the instance for later analysis
-                    validation_name = f"{name}_validation.pkl"
+                    validation_name = f"{instance_name}_validation.pkl"
                     with open(os.path.join(output_path, validation_name), "wb") as f:
                         pickle.dump(validation_results, f)
 
@@ -422,7 +422,7 @@ if __name__ == "__main__":
         "--category",
         type=str,
         default="CON",
-        choices=["CON", "RAU", "RCO", "AC3", "CBFM-P"],
+        choices=["CON", "RAU", "RCO", "AC3", "CBFM", "CBFM-P"],
         help="Category of generated instances. CON - constant coupling, RAU - random uniform, RCO - random couplings only, "
         "AC3 - anti-cluster",
     )

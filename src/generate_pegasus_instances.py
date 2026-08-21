@@ -227,7 +227,7 @@ def generate_pegasus_instances(
                 else rng.uniform(-1, 1)
                 for edge in graph.edges()
             }
-        elif category == "CBFM-P":
+        elif category in {"CBFM", "CBFM-P"}:
             bias = {node: rng.choice([-1, 0], p=[0.85, 0.15]) for node in graph.nodes()}
             couplings = {
                 edge: rng.choice([-1, 0, 1], p=[0.1, 0.35, 0.55])
@@ -247,7 +247,8 @@ def generate_pegasus_instances(
                 f'Category {category} is not a valid choice. It should be "RAU", "RCO" or "AC3"'
             )
 
-        name = f"{name}{i + 1}" if username else f"{i + 1}"
+        file_category = "CBFM" if category == "CBFM-P" else category
+        instance_name = f"{name}{i + 1}" if username else f"P{size}_{file_category}_{i + 1}"
         for output_type in output_types:
             if (
                 output_type == "SpinGlass"
@@ -267,7 +268,7 @@ def generate_pegasus_instances(
                 }
                 bias_sg = dict(sorted(bias_sg.items()))
 
-                output_name = f"{name}_sg.txt"
+                output_name = f"{instance_name}_sg.txt"
 
                 with open(os.path.join(output_path, output_name), "w") as f:
                     f.write("# \n")
@@ -287,7 +288,7 @@ def generate_pegasus_instances(
                 else:
                     data = [bias, couplings]
 
-                output_name = f"{name}_dv.pkl"
+                output_name = f"{instance_name}.pkl"
                 with open(os.path.join(output_path, output_name), "wb") as f:
                     pickle.dump(data, f)
 
@@ -322,7 +323,7 @@ if __name__ == "__main__":
         "--category",
         type=str,
         default="CON",
-        choices=["CON", "RAU", "RCO", "AC3", "CBFM-P"],
+        choices=["CON", "RAU", "RCO", "AC3", "CBFM", "CBFM-P"],
         help="Category of generated instances. CON - constant coupling, RAU - random uniform, RCO - random couplings only, "
         "AC3 - anti-cluster",
     )

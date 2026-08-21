@@ -47,16 +47,19 @@ def extend(J: dict) -> dict:
     return J_new
 
 
-def pseudo_likelihood(beta_eff: float, h: dict, J: dict, samples: np.ndarray):
-    N = samples.shape[1]
-    D = samples.shape[0]
-    L = 0.0
-    J = extend(J)
-    for d in range(D):
-        for i in range(N):
-            L += np.log(1 + np.exp(-2 * beta_eff * samples[d, i] *
-                                   (h[i] + sum([J[(i, j)] * samples[d, j] for j in neighbour(i, N)]))))
-    return L/(N * D)
+def pseudo_likelihood(
+    beta_eff: float,
+    h: dict,
+    J: dict,
+    samples: np.ndarray,
+    h_vect: np.ndarray | None = None,
+    J_vect: np.ndarray | None = None,
+):
+    beta_eff_scalar = float(np.asarray(beta_eff).reshape(-1)[0])
+    if h_vect is None or J_vect is None:
+        J_ext = extend(J)
+        h_vect, J_vect = vectorize(h, J_ext)
+    return pseudo_likelihood_2d_vectorised(beta_eff_scalar, h_vect, J_vect, samples)
 
 
 def pseudo_likelihood_2d(beta_eff: float, h: dict, J: dict, samples: np.ndarray):
